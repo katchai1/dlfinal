@@ -38,5 +38,10 @@ def get_data():
     word_list = list(word_set)
     for i in range(len(word_list)):
         vocab_dict[word_list[i]] = i
-    numerical_words = [vocab_dict[i] for i in word_list]
+    numerical_words = []
+    for sentence in processed_sentences:
+        processed_sentence = []
+        for word in sentence:
+            processed_sentence.append(vocab_dict[word])
+        numerical_words.append(processed_sentence)
     return (numerical_words, vocab_dict)
