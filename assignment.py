@@ -27,7 +27,7 @@ class Model(tf.keras.Model):
         embeddings = self.embedding_model(tf.convert_to_tensor(npsentence))
         print(embeddings.shape)
         positional = self.positional_model(embeddings)
-        transforer = self.transformer(positional)
+        transformer = self.transformer(positional)
         prbs = self.dense_model(transformer)
         return prbs
 
