@@ -1,4 +1,5 @@
 import csv
+import numpy as np
 
 def get_data():
     words = {}
@@ -28,4 +29,14 @@ def get_data():
                     a.append(w)
             processed_sentences.append(a)
     # Do we need to pad?
-    return processed_sentences
+
+    vocab_dict = {}
+    word_set = set([])
+    for sentence in processed_sentences:
+        for word in sentence:
+            word_set.add(word)
+    word_list = list(word_set)
+    for i in range(len(word_list)):
+        vocab_dict[word_list[i]] = i
+    numerical_words = [vocab_dict[i] for i in word_list]
+    return (numerical_words, vocab_dict)

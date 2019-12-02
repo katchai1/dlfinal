@@ -25,6 +25,7 @@ class Model(tf.keras.Model):
     def call(self, sentences):
         npsentence = np.asarray(sentences)
         embeddings = self.embedding_model(tf.convert_to_tensor(npsentence))
+        print(embeddings.shape)
         positional = self.positional_model(embeddings)
         transforer = self.transformer(positional)
         prbs = self.dense_model(transformer)
@@ -77,13 +78,13 @@ def test(model, sentences):
 
 def main():    
     print("Running preprocessing...")
-    processed_sentences = get_data()
+    (sentences, vocab_dict) = get_data()
     print("Preprocessing complete.")
 
-    model = Model(len(processed_sentences))
+    model = Model(len(sentences))
 
     # Train and Test Model for 1 epoch.
-    train(model, processed_sentences)
+    train(model, sentences)
     print(test())
 
 if __name__ == '__main__':
