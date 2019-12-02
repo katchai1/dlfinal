@@ -14,10 +14,10 @@ class Model(tf.keras.Model):
         self.batch_size = 64
         self.embedding_size = 34
         self.vocab_size = sentence_size
-        self.window_size = 3
+        self.window_size = 277
 
         # Layers
-        self.embedding_model = tf.keras.layers.Embedding(self.vocab_size, self.embedding_size)
+        self.embedding_model = tf.keras.layers.Embedding(self.vocab_size, self.embedding_size, input_length=self.window_size)
         self.positional_model = transformer.Position_Encoding_Layer(self.window_size, self.embedding_size)
         self.transformer = transformer.Transformer_Block(self.embedding_size, True)
         self.dense_model = tf.keras.layers.Dense(self.vocab_size, activation="softmax")
@@ -35,6 +35,7 @@ def train(model, sentences):
     total_loss = 0
     total_accuracy = 0
     total_mask = 0
+    print(sentences[0])
     for i in range(0, len(sentences), model.batch_size):
         batch_input = sentences[i:i+model.batch_size:1]
         batch_labels = sentences[i+1:i+model.window_size+1:1] 
@@ -42,6 +43,7 @@ def train(model, sentences):
         #batch_mask_sum = np.sum(batch_mask)
         #total_mask += batch_mask_sum
         with tf.GradientTape() as tape:
+            print(np.array(batch_input).shape)
             prbs = model.call(batch_input)
             loss = model.loss_function(prbs, batch_labels) #, batch_mask) # should we divide by loss here?
         total_loss += loss

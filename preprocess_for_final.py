@@ -1,6 +1,8 @@
 import csv
 import numpy as np
-from nltk.tokenize import word_tokenize
+#import nltk
+#nltk.download()
+#from nltk.tokenize import word_tokenize
 # if you havin problems do this: https://stackoverflow.com/questions/4867197/failed-loading-english-pickle-with-nltk-data-load
 
 def get_data():
@@ -15,14 +17,14 @@ def get_data():
             # if i > 3000:
             #     break
             # i += 1
-            split = word_tokenize(line)
+            split = line.split()
             for w in split:
-                w_stem = w
-                if w_stem not in words:
-                    words[w_stem] = 1
+                if w not in words:
+                    words[w] = 1
                 else:
-                    words[w_stem] = words[w_stem] + 1
+                    words[w] = words[w] + 1
 
+    print(len(words.keys()))
     # going to guess words that appear less than 10 times can get UNK'd
     # i = 0
     processed_sentences = []
@@ -35,15 +37,14 @@ def get_data():
             # if i > 3000:
             #     break
             # i += 1
-            split = word_tokenize(line)
+            split = line.split()
             max_len = max(max_len, len(split))
             a = []
             for w in split:
-                w_stem = w
-                if words[w_stem] <= 10:
+                if words[w] <= 10:
                     a.append("UNK")
                 else:
-                    a.append(w_stem)
+                    a.append(w)
             a.append(STOP_TOKEN)
             processed_sentences.append(a)
     
@@ -58,6 +59,7 @@ def get_data():
     word_list = list(word_set) + [STOP_TOKEN, PAD_TOKEN]
     for i in range(len(word_list)):
         vocab_dict[word_list[i]] = i
+    print(len(word_list))
     numerical_words = []
     for sentence in processed_sentences:
         processed_sentence = []
