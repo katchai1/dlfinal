@@ -33,24 +33,55 @@ class Model(tf.keras.Model):
         prbs = self.dense_model(transformer)
         return prbs
 
+    def accuracy_function(self, prbs, labels, mask):
+        """
+        DO NOT CHANGE
+
+        Computes the batch accuracy
+
+        :param prbs:  float tensor, word prediction probabilities [batch_size x window_size x english_vocab_size]
+        :param labels:  integer tensor, word prediction labels [batch_size x window_size]
+        :param mask:  tensor that acts as a padding mask [batch_size x window_size]
+        :return: scalar tensor of accuracy of the batch between 0 and 1
+        """
+
+        decoded_symbols = tf.argmax(input=prbs, axis=2)
+        accuracy = tf.reduce_mean(tf.boolean_mask(tf.cast(tf.equal(decoded_symbols, labels), dtype=tf.float32),mask))
+        return accuracy
+
+
+    def loss_function(self, prbs, labels, mask):
+        """
+        Calculates the model cross-entropy loss after one forward pass
+
+        :param prbs:  float tensor, word prediction probabilities [batch_size x window_size x english_vocab_size]
+        :param labels:  integer tensor, word prediction labels [batch_size x window_size]
+        :param mask:  tensor that acts as a padding mask [batch_size x window_size]
+        :return: the loss of the model as a tensor
+        """
+
+        # Note: you can reuse this from rnn_model.
+        loss = tf.keras.losses.sparse_categorical_crossentropy(tf.boolean_mask(labels, mask), tf.boolean_mask(prbs, mask), from_logits=False)
+        loss = tf.math.reduce_mean(loss)
+        return loss
+
 def train(model, sentences, padding_index):
     total_loss = 0
-    total_accuracy = 0
-    total_mask = 0
-    print(sentences[0])
+    # total_accuracy = 0
+    # total_mask = 0
+    # print(sentences[0])
     for i in range(0, len(sentences), model.batch_size):
         batch_input = sentences[i:i+model.batch_size:1]
-        batch_labels = sentences[i+1:i+model.window_size+1:1]
-        #batch_mask = batch_english_labels != eng_padding_index
-        #batch_mask_sum = np.sum(batch_mask)
-        #total_mask += batch_mask_sum
+        batch_labels = sentences[i+1:i+model.batch_size+1:1]
+        batch_mask = (batch_english_labels != eng_padding_index)
         with tf.GradientTape() as tape:
             print(np.array(batch_input).shape)
             prbs = model.call(batch_input)
-            loss = model.loss_function(prbs, batch_labels) #, batch_mask) # should we divide by loss here?
+            loss = model.loss_function(prbs, batch_labels, batch_mask) # should we divide by loss here?
         total_loss += loss
-        accuracy = model.accuracy_function(prbs, batch_english_labels) #, batch_mask)
-        total_accuracy += accuracy * batch_mask_sum
+        accuracy = model.accuracy_function(prbs, batch_english_labels, batch_mask)
+        print(accuracy)
+        # total_accuracy += accuracy * batch_mask_sum
         grad = tape.gradient(loss, model.trainable_variables)
         model.optimizer.apply_gradients(zip(grad,model.trainable_variables))
         """if (i / model.batch_size) % 1000 == 0:
