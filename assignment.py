@@ -21,15 +21,16 @@ class Model(tf.keras.Model):
         # Layers
         self.embedding_model = tf.keras.layers.Embedding(self.vocab_size, self.embedding_size, input_length=self.window_size)
         self.positional_model = transformer.Position_Encoding_Layer(self.window_size, self.embedding_size)
-        self.transformer = transformer.Transformer_Block(self.embedding_size, True)
+        self.transformer1 = transformer.Transformer_Block(self.embedding_size, False)
+        # self.transformer2 = transformer.Transformer_Block(self.embedding_size, False)
         self.dense_model = tf.keras.layers.Dense(self.vocab_size, activation="softmax")
 
     def call(self, sentences):
         npsentence = np.asarray(sentences)
         embeddings = self.embedding_model(tf.convert_to_tensor(npsentence))
-        print(embeddings.shape)
         positional = self.positional_model(embeddings)
-        transformer = self.transformer(positional)
+        transformer = self.transformer1(positional)
+        # transformer = self.transformer2(transformer)
         prbs = self.dense_model(transformer)
         return prbs
 
@@ -70,16 +71,18 @@ def train(model, sentences, padding_index):
     # total_accuracy = 0
     # total_mask = 0
     # print(sentences[0])
+    print("total num sentences: " + str(len(sentences)))
     for i in range(0, len(sentences), model.batch_size):
+        print(i)
         batch_input = sentences[i:i+model.batch_size:1]
-        batch_labels = sentences[i+1:i+model.batch_size+1:1]
-        batch_mask = (batch_english_labels != eng_padding_index)
+        batch_labels = np.array(sentences[i+1:i+model.batch_size+1:1])
+        batch_mask = (batch_labels != padding_index)
         with tf.GradientTape() as tape:
-            print(np.array(batch_input).shape)
+            # print(np.array(batch_input).shape)
             prbs = model.call(batch_input)
             loss = model.loss_function(prbs, batch_labels, batch_mask) # should we divide by loss here?
         total_loss += loss
-        accuracy = model.accuracy_function(prbs, batch_english_labels, batch_mask)
+        accuracy = model.accuracy_function(prbs, batch_labels, batch_mask)
         print(accuracy)
         # total_accuracy += accuracy * batch_mask_sum
         grad = tape.gradient(loss, model.trainable_variables)
