@@ -7,14 +7,16 @@ from preprocess_for_final import *
 import sys
 
 class Model(tf.keras.Model):
-    def __init__(self, sentence_size):
+    def __init__(self, vocab_size, sentence_size):
         super(Model, self).__init__()
 
         # Model Vars
         self.batch_size = 64
         self.embedding_size = 34
-        self.vocab_size = sentence_size
-        self.window_size = 277
+        self.vocab_size = vocab_size
+        self.window_size = sentence_size
+        self.learning_rate = 0.01
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate = self.learning_rate)
 
         # Layers
         self.embedding_model = tf.keras.layers.Embedding(self.vocab_size, self.embedding_size, input_length=self.window_size)
@@ -83,7 +85,7 @@ def main():
     (sentences, vocab_dict, padding_index) = get_data()
     print("Preprocessing complete.")
 
-    model = Model(len(sentences))
+    model = Model(len(vocab_dict)+1, len(sentences[0]))
 
     # Train and Test Model for 1 epoch.
     train(model, sentences, padding_index)
