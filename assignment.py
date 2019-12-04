@@ -31,14 +31,14 @@ class Model(tf.keras.Model):
         prbs = self.dense_model(transformer)
         return prbs
 
-def train(model, sentences):
+def train(model, sentences, padding_index):
     total_loss = 0
     total_accuracy = 0
     total_mask = 0
     print(sentences[0])
     for i in range(0, len(sentences), model.batch_size):
         batch_input = sentences[i:i+model.batch_size:1]
-        batch_labels = sentences[i+1:i+model.window_size+1:1] 
+        batch_labels = sentences[i+1:i+model.window_size+1:1]
         #batch_mask = batch_english_labels != eng_padding_index
         #batch_mask_sum = np.sum(batch_mask)
         #total_mask += batch_mask_sum
@@ -75,18 +75,18 @@ def test(model, sentences):
     final_perplexity = tf.math.exp(total_loss / total_mask)
     final_accuracy = total_accuracy / total_mask
     print("Testing completed with perplexity: " + str(final_perplexity) + " with accuracy: " + str(final_accuracy))"""
-    
+
     return (total_loss)
 
-def main():    
+def main():
     print("Running preprocessing...")
-    (sentences, vocab_dict) = get_data()
+    (sentences, vocab_dict, padding_index) = get_data()
     print("Preprocessing complete.")
 
     model = Model(len(sentences))
 
     # Train and Test Model for 1 epoch.
-    train(model, sentences)
+    train(model, sentences, padding_index)
     print(test())
 
 if __name__ == '__main__':

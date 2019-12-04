@@ -10,7 +10,7 @@ def get_data():
     # however, probably need to convert every word to lowercase and also not sure
     # what to do with the punctuation
 
-    # TODO: look into porter stemmer to process punctuation and lowercase-ness 
+    # TODO: look into porter stemmer to process punctuation and lowercase-ness
     # i = 0
     with open("comments.txt") as f:
         for line in f:
@@ -41,14 +41,14 @@ def get_data():
             max_len = max(max_len, len(split))
             a = []
             for w in split:
-                if words[w] <= 10:
+                if words[w] <= 100:
                     a.append("UNK")
                 else:
                     a.append(w)
             a.append(STOP_TOKEN)
             processed_sentences.append(a)
-    
-    
+
+
     # Do we need to pad?
 
     vocab_dict = {}
@@ -67,7 +67,7 @@ def get_data():
             processed_sentence.append(vocab_dict[word])
         processed_sentence = processed_sentence + [vocab_dict[STOP_TOKEN]] + [vocab_dict[PAD_TOKEN]] * (max_len - len(sentence))
         numerical_words.append(processed_sentence)
-    return (numerical_words, vocab_dict)
+    return (numerical_words, vocab_dict, vocab_dict[PAD_TOKEN])
 
 if __name__ == "__main__":
     print(get_data()[0])
