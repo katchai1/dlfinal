@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import numpy as np
 import transformer_funcs as transformer
-from preprocess_for_final import *
+from preprocess_with_stem_and_pad import *
 import sys
 
 class Model(tf.keras.Model):

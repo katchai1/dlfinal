@@ -2,11 +2,17 @@ import csv
 import numpy as np
 from nltk.stem import PorterStemmer
 from nltk.tokenize import sent_tokenize, word_tokenize
+import pickle
+from statistics import stdev
 # if you havin problems do this: https://stackoverflow.com/questions/4867197/failed-loading-english-pickle-with-nltk-data-load
 
 def get_data():
     ps = PorterStemmer()
+    PAD_TOKEN = "*PAD*"
+    STOP_TOKEN = "*STOP*"
+    UNK_TOKEN = "*UNK*"
     words = {}
+    word_set = set([])            
     # however, probably need to convert every word to lowercase and also not sure
     # what to do with the punctuation
 
@@ -22,52 +28,81 @@ def get_data():
                 w_stem = ps.stem(w)
                 if w_stem not in words:
                     words[w_stem] = 1
+                    word_set.add(w_stem)
                 else:
                     words[w_stem] = words[w_stem] + 1
+    print("1")
+    
+    word_list = list(word_set) + [STOP_TOKEN, PAD_TOKEN, UNK_TOKEN]
 
     # going to guess words that appear less than 10 times can get UNK'd
     # i = 0
     processed_sentences = []
-    PAD_TOKEN = "*PAD*"
-    STOP_TOKEN = "*STOP*"
 
+    # hello
     max_len = 0
     with open("comments.txt") as f:
-        for line in f:
-            # if i > 3000:
-            #     break
-            # i += 1
-            split = word_tokenize(line)
-            max_len = max(max_len, len(split))
-            a = []
-            for w in split:
-                w_stem = ps.stem(w)
-                if words[w_stem] <= 10:
-                    a.append("UNK")
-                else:
-                    a.append(w_stem)
-            a.append(STOP_TOKEN)
-            processed_sentences.append(a)
-    
+        with open("processed_words.txt", mode='w') as written: 
+            for line in f:
+                # if i > 3000:
+                #     break
+                # i += 1
+                split = word_tokenize(line)
+                if len(split) > 25:
+                    continue
+                max_len = max(max_len, len(split))
+                a = []
+                for w in split:
+                    w_stem = ps.stem(w)
+                    if words[w_stem] <= 10:
+                        a.append(UNK_TOKEN)
+                    else:
+                        a.append(w_stem)
+                a.append(STOP_TOKEN)
+                written.write(str(a))
+                processed_sentences.append(a)
+                                  
+    print("2")
+    print("average is 12")
+    print("Standard deviation of sample is:  9.11731883544809")
+
     
     # Do we need to pad?
 
-    vocab_dict = {}
-    word_set = set([])
-    for sentence in processed_sentences:
-        for word in sentence:
-            word_set.add(word)
-    word_list = list(word_set) + [STOP_TOKEN, PAD_TOKEN]
-    for i in range(len(word_list)):
-        vocab_dict[word_list[i]] = i
+    vocab_dict = {k: v for v, k in enumerate(word_list)}
+    # word_set = set([])
+    # for sentence in processed_sentences:
+    #     for word in sentence:
+    #         word_set.add(word)
+    # word_list = list(word_set) + [STOP_TOKEN, PAD_TOKEN]
+    
+    
+    # for i in range(len(word_list)):
+    #     vocab_dict[word_list[i]] = i
+    
+    word_list = None # This is to be able to dump memory
+
+    with open('vocab_dict_abbreviated.data', 'wb') as f:
+        pickle.dump(vocab_dict, f)
+    
+    print("2.5")
+    
     numerical_words = []
+    # with open("processed_indices.txt", mode='w') as f_2:
     for sentence in processed_sentences:
         processed_sentence = []
         for word in sentence:
             processed_sentence.append(vocab_dict[word])
-        processed_sentence = processed_sentence + [vocab_dict[STOP_TOKEN]] + [vocab_dict[PAD_TOKEN]] * (max_len - len(sentence))
+        processed_sentence = processed_sentence + [vocab_dict[PAD_TOKEN]] * (max_len - len(sentence))
+        # f_2.write(str(processed_sentence))
         numerical_words.append(processed_sentence)
-    return (numerical_words, vocab_dict)
+    print(len(words))
+    print(len(vocab_dict))
+    print("3")
+
+    with open('numerical_sentences_abbreviated.data', 'wb') as f:
+        pickle.dump(numerical_words, f)
+
 
 if __name__ == "__main__":
-    print(get_data()[0])
+    get_data()
