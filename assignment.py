@@ -67,7 +67,7 @@ class Model(tf.keras.Model):
         loss = tf.math.reduce_mean(loss)
         return loss
 
-def train(model, sentences, padding_index, vocab_dict):
+def train(model, sentences, padding_index, vocab_dict, f):
     total_loss = 0
     # total_accuracy = 0
     # total_mask = 0
@@ -81,10 +81,12 @@ def train(model, sentences, padding_index, vocab_dict):
         if i % 12800 == 0:
             for i in range(5):
                 words = random.sample(vocab_dict.keys(), 2)
-                generate_sentence2(words[0], 26, vocab_dict, model)
+                # generate_sentence2(words[0], 26, vocab_dict, model, padding_index)
+                generate_sentence2(words[0], 25, vocab_dict, model, padding_index, f)
         batch_input = sentences[i:i+model.batch_size:1]
         decoder_input = batch_input[:, :-1]
         batch_labels = batch_input[:, 1:]
+        # print(decoder_input.shape)
 #        with np.printoptions(threshold=np.inf):
 #            print(batch_input)
 #            print(str(batch_labels) + "\n\n\n\n\n")
@@ -95,6 +97,8 @@ def train(model, sentences, padding_index, vocab_dict):
             loss = model.loss_function(prbs, batch_labels, batch_mask) # should we divide by loss here?
         total_loss += loss
         accuracy = model.accuracy_function(prbs, batch_labels, batch_mask)
+        if i % 3200 == 0:
+            print(accuracy)
         # print(accuracy)
         # total_accuracy += accuracy * batch_mask_sum
         grad = tape.gradient(loss, model.trainable_variables)
@@ -128,27 +132,53 @@ def test(model, sentences, padding_index):
 
     return (total_loss, total_accuracy / total_mask)
 
-def generate_sentence2(word1, length, vocab, model):
+def generate_sentence2(word1, length, vocab, model, padding_index, f):
     reverse_vocab = {idx:word for word, idx in vocab.items()}
     previous_state = None
-    
+    unk_index = vocab["*UNK*"]
+    stop_index = vocab["*STOP*"]
+
     first_string = word1
     first_word_index = vocab[word1]
     next_input = [[first_word_index]]
+
+    # append all indices here
+    input = [[first_word_index] + [padding_index for i in range(length-1)]]
+    # print(input)
     text = [first_string]
-    
+
     for i in range(length):
-        probs = model.call(next_input)
-        ind = np.argpartition(probs[0][0], -4)[-4:]
+        # probs = model.call(next_input)
+        probs = model.call(input)
+        # print(probs.shape)
+        # probs_single = np.array(probs[0][0])
+        probs_single = np.array(probs[0][i])
+        # ind = np.argpartition(probs[0][0], -4)[-4:]
+        ind = np.argpartition(probs_single, -10)[-10:]
+        top_probs = probs_single[ind]
+        top_probs = top_probs / np.sum(top_probs)
+
 #        for x in ind:
 #            print(reverse_vocab[x])
 #        print(probs.shape)
 #        print(probs[0][0].shape)
-        out_index = np.argmax(np.array(probs[0][0]))
+        # out_index = np.argmax(np.array(probs[0][0]))
+        # print(reverse_vocab[np.argmax(np.array(probs[0][0]))])
+        # out_index = np.random.choice(np.arange(len(vocab)+1), p=np.array(probs[0][0]))
+
+        out_index = unk_index
+        while (out_index == unk_index or out_index == stop_index):
+            out_index = np.random.choice(ind, p=np.array(top_probs))
+        # print(reverse_vocab[out_index])
         text.append(reverse_vocab[out_index])
         next_input = [[out_index]]
+        # input[0].append(out_index)
+        if (i != length-1):
+            input[0][i+1] = out_index
+        # print(input)
 
     print(" ".join(text))
+    f.write(" ".join(text) + "\n")
 
 def generate_sentence(word1, word2, length, vocab, model):
     """
@@ -172,7 +202,7 @@ def generate_sentence(word1, word2, length, vocab, model):
         print(end)
         output_string[:, end] = np.argmax(model(output_string[:,start:end]), axis=1)
     text = [reverse_vocab[i] for i in list(output_string[0])]
-    
+
     print(" ".join(text))
 
 def main():
@@ -187,19 +217,20 @@ def main():
         model = Model(len(vocab_dict)+1, sentences.shape[1])
         print("UNK Level: %s" %(i))
         # Train and Test Model for 1 epoch.
+        f = open("output.txt", "w")
         for i in range(3):
-            train(model, sentences, padding_index, vocab_dict)
+            train(model, sentences, padding_index, vocab_dict, f)
         for i in range(50):
            words = random.sample(vocab_dict.keys(), 2)
-           generate_sentence2(words[0], 26, vocab_dict, model)
+           generate_sentence2(words[0], 25, vocab_dict, model)
         (loss, accuracy) = test(model, sentences, padding_index)
         accuracy_dict[i] = accuracy
         print("UNK BELOW LEVEL: %s, accuracy: %s, loss: %s" %(i, accuracy, loss))
-        
+
         if accuracy > best_accuracy:
             best = i
             best_accuracy = accuracy
-        
+
         print("The best accuracy is: %s at UNK level %s" %(best_accuracy, best))
         print(accuracy_dict)
 
