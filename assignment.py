@@ -68,7 +68,7 @@ class Model(tf.keras.Model):
 
 def train(model, sentences, padding_index, vocab_dict, f, words_dict):
     total_loss = 0
-    accuracies = []
+    # accuracies = []
     # total_accuracy = 0
     # total_mask = 0
     # print(sentences[0])
@@ -82,11 +82,11 @@ def train(model, sentences, padding_index, vocab_dict, f, words_dict):
     #for i in range(0, 64000, model.batch_size): # TODO change back
         if i % 3200 == 0:
            print(i)
-        # if i % 12800 == 0:
-            # for i in range(5):
-                # words = random.sample(vocab_dict.keys(), 2)
+        if i % 12800 == 0:
+            for i in range(5):
+                words = random.sample(vocab_dict.keys(), 2)
                 # generate_sentence2(words[0], 26, vocab_dict, model, padding_index)
-                # generate_sentence2(words[0], 25, vocab_dict, model, padding_index, f, words_dict)
+                generate_sentence2(words[0], 25, vocab_dict, model, padding_index, f, words_dict)
         batch_input = sentences[i:i+model.batch_size:1]
         decoder_input = batch_input[:, :-1]
         batch_labels = batch_input[:, 1:]
@@ -101,9 +101,9 @@ def train(model, sentences, padding_index, vocab_dict, f, words_dict):
             loss = model.loss_function(prbs, batch_labels, batch_mask) # should we divide by loss here?
         total_loss += loss
         accuracy = model.accuracy_function(prbs, batch_labels, batch_mask)
-        if i % 3200 == 0:
-            accuracies.append(accuracy.numpy())
-            print(accuracies)
+        # if i % 3200 == 0:
+        #     accuracies.append(accuracy.numpy())
+        #     print(accuracies)
         # print(accuracy)
         # total_accuracy += accuracy * batch_mask_sum
         grad = tape.gradient(loss, model.trainable_variables)
