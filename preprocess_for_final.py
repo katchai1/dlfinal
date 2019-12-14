@@ -41,8 +41,8 @@ def get_data():
             max_len = max(max_len, len(split))
             a = []
             for w in split:
-                if words[w] <= 100:
-                    a.append("UNK")
+                if words[w] <= 10:
+                    a.append("*UNK*")
                 else:
                     a.append(w)
             a.append(STOP_TOKEN)
@@ -67,7 +67,7 @@ def get_data():
             processed_sentence.append(vocab_dict[word])
         processed_sentence = processed_sentence + [vocab_dict[STOP_TOKEN]] + [vocab_dict[PAD_TOKEN]] * (max_len - len(sentence))
         numerical_words.append(processed_sentence)
-    return (numerical_words, vocab_dict, vocab_dict[PAD_TOKEN])
+    return (np.array(numerical_words), vocab_dict, vocab_dict[PAD_TOKEN])
 
 if __name__ == "__main__":
     print(get_data()[0])
