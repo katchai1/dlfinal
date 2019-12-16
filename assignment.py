@@ -39,7 +39,6 @@ class Model(tf.keras.Model):
 
     def accuracy_function(self, prbs, labels, mask):
         """
-        DO NOT CHANGE
         Computes the batch accuracy
         :param prbs:  float tensor, word prediction probabilities [batch_size x window_size x english_vocab_size]
         :param labels:  integer tensor, word prediction labels [batch_size x window_size]
@@ -60,13 +59,15 @@ class Model(tf.keras.Model):
         :param mask:  tensor that acts as a padding mask [batch_size x window_size]
         :return: the loss of the model as a tensor
         """
-
-        # Note: you can reuse this from rnn_model.
         loss = tf.keras.losses.sparse_categorical_crossentropy(tf.boolean_mask(labels, mask), tf.boolean_mask(prbs, mask), from_logits=False)
         loss = tf.math.reduce_mean(loss)
         return loss
 
 def train(model, sentences, padding_index, vocab_dict, f, words_dict):
+    """
+    Performs one epoch of the training step. Batches the input, and calls the model on the inputs and labels to train.
+    Prints out accuracies, perplexities, and sample sentences intermittently
+    """
     total_loss = 0
     print(len(sentences) / model.batch_size)
     n = len(sentences)
@@ -86,11 +87,13 @@ def train(model, sentences, padding_index, vocab_dict, f, words_dict):
         batch_labels = batch_input[:, 1:]
         batch_mask = (batch_labels != padding_index)
         with tf.GradientTape() as tape:
-            # print(np.array(batch_input).shape)
             prbs = model.call(decoder_input)
             loss = model.loss_function(prbs, batch_labels, batch_mask) # should we divide by loss here?
         total_loss += loss
         accuracy = model.accuracy_function(prbs, batch_labels, batch_mask)
+        if i % 3200 == 0:
+            print(accuracy)
+            print(tf.math.exp(loss))
         grad = tape.gradient(loss, model.trainable_variables)
         model.optimizer.apply_gradients(zip(grad,model.trainable_variables))
         """if (i / model.batch_size) % 1000 == 0:
@@ -123,20 +126,15 @@ def test(model, sentences, padding_index):
     return (total_loss, total_accuracy / total_mask)
 
 def generate_sentence2(word1, length, vocab, model, padding_index, f, words_dict):
-    # starting_words = ["what", "you", "oh", "yes", "ok", "sure", "whi", "do", "but", "for", "if", "I", "will"]
-    # i = np.random(len(starting_words))
-    # word_start = starting_words[i]
-    # word_start = np.random.choice(starting_words)
-    # word_start = word1
-    # print("generate sentence")
+    """
+    Chooses one word from the top 100 words in the dictionary, then generates a sentence starting with that word,
+    and feeding in the generated output so far as the input into the next step.
+    """
     word_probs = np.fromiter(words_dict.values(), dtype='float32')
     words_keys = list(words_dict.keys())
     top_word_inds = np.argpartition(word_probs, -100)[-100:]
     top_word_probs = word_probs[top_word_inds]
     top_word_probs = top_word_probs / np.sum(top_word_probs)
-    # print(probs.shape)
-    # print(probs)
-    # probs = probs / np.sum(probs)
     word_start_ind = np.random.choice(top_word_inds, p=top_word_probs)
     word_start = words_keys[word_start_ind]
 
@@ -148,15 +146,12 @@ def generate_sentence2(word1, length, vocab, model, padding_index, f, words_dict
 
     first_string = word_start
     first_word_index = vocab[word_start]
-    next_input = [[first_word_index]]
 
     # append all indices here
     input = [[first_word_index] + [padding_index for i in range(length-1)]]
-    # print(input)
     text = [first_string]
 
     for i in range(length):
-        # probs = model.call(next_input)
         probs = model.call(input)
         probs_single = np.array(probs[0][i])
         ind = np.argpartition(probs_single, -10)[-10:]
@@ -166,39 +161,12 @@ def generate_sentence2(word1, length, vocab, model, padding_index, f, words_dict
         out_index = unk_index
         while (out_index == unk_index or out_index == stop_index):
             out_index = np.random.choice(ind, p=np.array(top_probs))
-        # print(reverse_vocab[out_index])
         text.append(reverse_vocab[out_index])
-        next_input = [[out_index]]
-        # input[0].append(out_index)
         if (i != length-1):
             input[0][i+1] = out_index
-        # print(input)
 
     print(" ".join(text))
     f.write(" ".join(text) + "\n")
-
-def generate_sentence(word1, word2, length, vocab, model):
-    """
-    Given initial 2 words, print out predicted sentence of target length.
-    :param word1: string, first word
-    :param word2: string, second word
-    :param length: int, desired sentence length
-    :param vocab: dictionary, word to id mapping
-    :param model: trained trigram model
-    """
-    reverse_vocab = {idx:word for word, idx in vocab.items()}
-    output_string = np.zeros((1,length), dtype=np.int)
-    output_string[:, :2] = vocab[word1], vocab[word2]
-
-    for end in range(2, length):
-        print(output_string)
-        start = end - 2
-        print(start)
-        print(end)
-        output_string[:, end] = np.argmax(model(output_string[:,start:end]), axis=1)
-    text = [reverse_vocab[i] for i in list(output_string[0])]
-
-    print(" ".join(text))
 
 def main():
     best = 15
